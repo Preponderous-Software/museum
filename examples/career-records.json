@@ -1,0 +1,16 @@
+[
+  {"type": "exhibit", "key": "job-1", "title": "First job: support desk", "date": "2018-06-04", "group": "Acme", "kind": "Job",
+   "blurb": "Answered tickets and wrote the first internal wiki.", "dim": true, "measures": {"weeks": 60},
+   "facts": [{"label": "Role", "value": "Support engineer"}]},
+  {"type": "exhibit", "key": "talk-1", "title": "Talk: testing legacy code", "date": "2019-10-12", "group": "Meetups", "kind": "Talk",
+   "measures": {"weeks": 3, "people": 80}, "links": [{"label": "Slides", "url": "https://example.com/slides"}]},
+  {"type": "exhibit", "key": "job-2", "title": "Platform team", "date": "2020-01-06", "group": "Globex", "kind": "Job",
+   "blurb": "Moved the build to containers.", "measures": {"weeks": 210}},
+  {"type": "exhibit", "key": "course-1", "title": "Course: distributed systems", "date": "2021-02-01", "group": "Online", "kind": "Course",
+   "measures": {"weeks": 12}},
+  {"type": "exhibit", "key": "book-1", "title": "Wrote a short book", "date": "2022-09-30", "group": "Self", "kind": "Writing",
+   "measures": {"weeks": 40, "people": 1200}},
+  {"type": "activity", "date": "2019-10-12", "count": 1},
+  {"type": "activity", "date": "2022-09-30", "count": 1},
+  {"type": "period", "key": "2020", "stats": [{"label": "Moves", "value": 1}]}
+]

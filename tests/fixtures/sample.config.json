@@ -1,0 +1,9 @@
+{
+  "title": "Sample Museum",
+  "subtitle": "A fixture",
+  "sources": [{"type": "file", "path": "records.json", "source": "primary"},
+              {"type": "file", "path": "more-records.json", "source": "secondary"}],
+  "eras": {"by": "year", "split_over": 60},
+  "activity": {"primary": "primary"},
+  "exhibits": {"size": "commits", "highlight": "stars", "group_label": "Org", "kind_label": "Language"}
+}

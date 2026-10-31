@@ -1,0 +1,12 @@
+{
+  "title": "My Museum",
+  "subtitle": "Everything I have published, year by year",
+  "sources": [
+    {"type": "github", "owners": ["your-login", "your-org"], "from_year": 2015, "cache": "cache/github.json"},
+    {"type": "git", "roots": ["~/src"], "depth": 1}
+  ],
+  "eras": {"by": "year", "split_over": 60},
+  "activity": {"primary": "github", "label": "contributions"},
+  "exhibits": {"size": "myCommits", "size_label": "your commits", "highlight": "stars", "highlight_label": "stars",
+               "group_label": "Owner", "kind_label": "Language", "dim_label": "archived or forked"}
+}

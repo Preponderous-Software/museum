@@ -1,0 +1,13 @@
+{
+  "title": "My Museum (private view)",
+  "subtitle": "Private repositories and local-only clones included: keep the built document to yourself",
+  "sources": [
+    {"type": "github", "owners": ["your-login", "your-org"], "from_year": 2015, "cache": "cache/github.json",
+     "include_private": true},
+    {"type": "git", "roots": ["~/src"], "depth": 1, "standalone": true}
+  ],
+  "eras": {"by": "year", "split_over": 60},
+  "activity": {"primary": "github", "label": "contributions"},
+  "exhibits": {"size": "myCommits", "size_label": "your commits", "highlight": "stars", "highlight_label": "stars",
+               "group_label": "Owner", "kind_label": "Language", "dim_label": "archived or forked"}
+}

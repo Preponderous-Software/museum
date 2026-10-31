@@ -1,0 +1,36 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: Tests
+    # Pinned: ubuntu-latest (26.04) has no Python 3.8, the oldest the builder supports.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Builder tests
+        run: python -m unittest discover -s tests -v
+      - name: Layout and walking tests
+        run: node tests/layout_test.js
+      - name: The offline example builds
+        run: |
+          python -m museum build examples/career.json -o /tmp/career.json
+          python -c "import json; d = json.load(open('/tmp/career.json')); assert d['schema'] == 'museum/1' and len(d['exhibits']) == 5"
+      - name: The committed fixture matches the builder
+        run: |
+          python -m museum build tests/fixtures/sample.config.json -o /tmp/sample.json
+          python - <<'PY'
+          import json
+          a, b = json.load(open("/tmp/sample.json")), json.load(open("tests/fixtures/sample.museum.json"))
+          a.pop("generated"); b.pop("generated")
+          assert a == b, "tests/fixtures/sample.museum.json is stale: rebuild it"
+          PY

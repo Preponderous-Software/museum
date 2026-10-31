@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Museum</title>
+<link rel="icon" href="data:,">
+<meta name="description" content="A walkable museum of a developer's history, drawn with Strata.">
+<style>
+  :root {
+    --bg: #1d1b18; --fg: #f4efe6; --muted: #b8afa0; --panel: rgba(29, 27, 24, .88); --panel-border: rgba(244, 239, 230, .14);
+    --accent: #e0a84f; --chip: rgba(244, 239, 230, .1);
+    --sk-loader-bg: #1d1b18; --sk-loader-fg: #f4efe6; --sk-loader-panel: #2a2722; --sk-loader-accent: #e0a84f;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); overflow: hidden;
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-tap-highlight-color: transparent; }
+  #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  kbd { font: 600 12px ui-monospace, monospace; border: 1px solid var(--panel-border); border-bottom-width: 2px;
+    border-radius: 4px; padding: 0 5px; margin-right: 6px; background: var(--chip); }
+  .glass { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 12px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+
+  #where { position: fixed; z-index: 3; left: max(16px, env(safe-area-inset-left)); top: max(16px, env(safe-area-inset-top));
+    padding: 10px 14px; max-width: min(420px, calc(100vw - 150px)); pointer-events: none; }
+  #where h1 { margin: 0; font-size: 20px; letter-spacing: .01em; }
+  #where p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+
+  #tools { position: fixed; z-index: 3; right: max(16px, env(safe-area-inset-right)); top: max(16px, env(safe-area-inset-top));
+    display: flex; gap: 8px; }
+  #tools button { min-height: 40px; padding: 6px 12px; }
+
+  #prompt { position: fixed; z-index: 3; left: 50%; transform: translateX(-50%); bottom: max(24px, env(safe-area-inset-bottom));
+    padding: 9px 14px; max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #prompt.target { cursor: pointer; border-color: var(--accent); }
+  #prompt.hint { color: var(--muted); pointer-events: none; font-size: 13px; }
+
+  #labels { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+  .label { position: absolute; transform: translate(-50%, -100%); white-space: nowrap; font-size: 12px; padding: 2px 7px;
+    border-radius: 6px; background: rgba(29, 27, 24, .72); color: var(--fg); }
+  .label.hall { font-size: 22px; font-weight: 650; padding: 4px 12px; background: rgba(29, 27, 24, .8); }
+  .label.hall small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); text-align: center; }
+  .label.era { font-size: 13px; font-weight: 600; text-align: center; }
+  .label.era small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+
+  #panel { position: fixed; z-index: 4; right: max(16px, env(safe-area-inset-right)); top: 72px; width: 380px;
+    max-height: calc(100vh - 96px); overflow: auto; padding: 16px 18px; }
+  #panel h2 { margin: 0 30px 4px 0; font-size: 20px; overflow-wrap: anywhere; }
+  #panel .blurb { margin: 8px 0 12px; color: var(--fg); }
+  #panel dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; font-size: 13px; }
+  #panel dt { color: var(--muted); }
+  #panel dd { margin: 0; overflow-wrap: anywhere; }
+  #panel .links a { display: inline-block; margin: 0 8px 6px 0; padding: 6px 12px; border-radius: 8px; background: var(--accent);
+    color: #1d1b18; text-decoration: none; font-weight: 600; }
+  .close { position: absolute; right: 10px; top: 10px; width: 36px; height: 36px; border-radius: 8px; border: 0;
+    background: var(--chip); font-size: 18px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--chip); display: inline-flex; gap: 6px; align-items: center; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  #directory { position: fixed; z-index: 5; inset: 0; display: grid; place-items: center; background: rgba(0, 0, 0, .45); }
+  #directory .glass { position: relative; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 64px); display: flex;
+    flex-direction: column; padding: 16px; }
+  #directory h2 { margin: 0 0 10px; font-size: 18px; }
+  #search { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--panel-border); background: rgba(0, 0, 0, .25);
+    color: var(--fg); font: inherit; margin-bottom: 10px; }
+  #results { overflow: auto; margin: 0; padding: 0; list-style: none; }
+  #results button { width: 100%; text-align: left; background: none; border: 0; padding: 8px 10px; border-radius: 8px;
+    display: flex; justify-content: space-between; gap: 12px; min-height: 40px; }
+  #results button:hover, #results button:focus-visible { background: var(--chip); outline: none; }
+  #results .sub { color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+  #legend { position: fixed; z-index: 4; left: max(16px, env(safe-area-inset-left)); bottom: max(16px, env(safe-area-inset-bottom));
+    padding: 12px 14px; max-width: min(360px, calc(100vw - 32px)); max-height: 60vh; overflow: auto; font-size: 13px; }
+  #legend h3 { margin: 8px 0 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  #legend h3:first-child { margin-top: 0; }
+
+  #stick { position: fixed; z-index: 3; left: max(20px, env(safe-area-inset-left)); bottom: max(28px, env(safe-area-inset-bottom));
+    width: 132px; height: 132px; border-radius: 50%; background: rgba(29, 27, 24, .35); border: 2px solid rgba(244, 239, 230, .35);
+    touch-action: none; }
+  #knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
+    background: rgba(244, 239, 230, .7); pointer-events: none; }
+  body.touch #prompt { left: auto; right: max(16px, env(safe-area-inset-right)); transform: none; bottom: max(64px, env(safe-area-inset-bottom));
+    max-width: calc(100vw - 190px); }
+  body.touch #legend { bottom: 180px; }
+
+  /* Phones: the panel is a bottom sheet over the joystick, the tools shrink to icons' width. */
+  @media (max-width: 640px) {
+    #panel { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 62vh; border-radius: 14px 14px 0 0;
+      padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+    #where { max-width: calc(100vw - 32px); top: max(64px, calc(env(safe-area-inset-top) + 56px)); }
+    #where h1 { font-size: 17px; }
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="view" tabindex="0" aria-label="The museum, in 3D. Walk with W A S D or the arrow keys; open the directory with M."></canvas>
+<div id="labels" aria-hidden="true"></div>
+<div id="where" class="glass" aria-live="polite"><h1>Museum</h1><p></p></div>
+<div id="tools">
+  <button type="button" class="glass" id="open-directory" aria-haspopup="dialog">Directory</button>
+  <button type="button" class="glass" id="toggle-legend" aria-pressed="false">Legend</button>
+</div>
+<div id="prompt" class="glass" hidden></div>
+<aside id="panel" class="glass" hidden aria-labelledby="panel-title">
+  <button type="button" class="close" aria-label="Close">×</button>
+  <h2 id="panel-title"></h2>
+  <div class="chips"></div>
+  <p class="blurb"></p>
+  <dl></dl>
+  <div class="links"></div>
+</aside>
+<div id="directory" hidden role="dialog" aria-modal="true" aria-labelledby="directory-title">
+  <div class="glass">
+    <button type="button" class="close" aria-label="Close">×</button>
+    <h2 id="directory-title">Directory</h2>
+    <input id="search" type="search" placeholder="Find an exhibit, or pick a hall" autocomplete="off" aria-label="Search exhibits">
+    <ul id="results"></ul>
+  </div>
+</div>
+<div id="legend" class="glass" hidden></div>
+<div id="stick" hidden aria-hidden="true"><div id="knob"></div></div>
+
+<script src="strata-loader.js"></script>
+<script src="strata-kit.js"></script>
+<script src="museum-layout.js"></script>
+<script src="museum-walk.js"></script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const EYE_Y = 1.62;
+const LABEL_RANGE = 11, GLOW_RANGE = 16, MAX_LABELS = 36, MAX_LAMPS = 12;
+
+const fmt = (v) => (typeof v === "number" ? v.toLocaleString() : String(v));
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const cssColor = (legend, id) => ((legend.values.find((v) => v.id === id) || {}).color) || "#888";
+const isTyping = (e) => { const t = e.target; return t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable); };
+
+/* ------------------------------------------------------------------ state */
+let doc, building, kit, mod, walker;
+let visitor = {x: 0, z: 0, yaw: -Math.PI / 2, pitch: 0.05};
+let facingNow = null, hallNow = null, openId = null, hintUntil = 0;
+const cam = {yaw: visitor.yaw, pitch: visitor.pitch, dist: 0.05, tx: 0, ty: EYE_Y, tz: 0};
+
+/* ---------------------------------------------------------- wasm handoff */
+function sendRows(fn, rows, stride) {
+  const n = rows.length / stride;
+  const ptr = mod._malloc(Math.max(rows.length, 1) * 4);
+  mod.HEAPF32.set(rows, ptr >> 2);
+  mod[fn](ptr, n);
+  mod._free(ptr);
+}
+
+/* --------------------------------------------------------------- the HUD */
+function statLine(stats) {
+  return (stats || []).filter((s) => s.value).slice(0, 4).map((s) => `${fmt(s.value)} ${s.label.toLowerCase()}`).join(" · ");
+}
+// A hall's stats, led by its activity unless a source already named that number.
+function withActivity(hall) {
+  const label = (doc.activity && doc.activity.label) || "activity";
+  const named = hall.stats.some((s) => s.label.toLowerCase() === label.toLowerCase());
+  return hall.activity && !named ? [{label, value: hall.activity}, ...hall.stats] : hall.stats;
+}
+function showWhere(hall) {
+  const h1 = $("where").querySelector("h1"), p = $("where").querySelector("p");
+  if (!hall || hall.id === "lobby") {
+    h1.textContent = doc.title;
+    const total = building.timeline.reduce((n, t) => n + t.activity, 0);
+    const label = (doc.activity && doc.activity.label) || "activity";
+    p.textContent = `${doc.subtitle ? doc.subtitle + " — " : ""}${fmt(doc.exhibits.length)} exhibits · ${fmt(total)} ${label}. Walk ahead to begin.`;
+  } else {
+    h1.textContent = hall.label;
+    p.textContent = statLine(withActivity(hall));
+  }
+}
+
+function openPanel(ex) {
+  const e = ex.ref;
+  openId = ex.id;
+  const panel = $("panel");
+  $("panel-title").textContent = e.title;
+  panel.querySelector(".chips").innerHTML =
+    `<span class="chip"><span class="dot" style="background:${cssColor(doc.legend.group, e.group)}"></span>${esc(e.group)}</span>` +
+    `<span class="chip"><span class="dot" style="background:${cssColor(doc.legend.kind, e.kind)}"></span>${esc(e.kind)}</span>` +
+    (e.badges || []).map((b) => `<span class="chip">${esc(b)}</span>`).join("");
+  panel.querySelector(".blurb").textContent = e.blurb || "";
+  panel.querySelector(".blurb").hidden = !e.blurb;
+  panel.querySelector("dl").innerHTML = (e.facts || []).map((f) => `<dt>${esc(f.label)}</dt><dd>${esc(fmt(f.value))}</dd>`).join("");
+  panel.querySelector(".links").innerHTML = (e.links || [])
+    .map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("");
+  panel.hidden = false;
+}
+function closePanel() { openId = null; $("panel").hidden = true; }
+$("panel").querySelector(".close").addEventListener("click", () => { closePanel(); $("view").focus({preventScroll: true}); });
+
+function interact() {
+  if (!facingNow) return false;
+  if (openId === facingNow.id) closePanel(); else openPanel(facingNow);
+  return true;
+}
+$("prompt").addEventListener("click", interact);
+
+/* ------------------------------------------------------------- directory */
+function stand(x, z, faceX, faceZ) {
+  const p = MuseumWalk.resolve(x, z, building.colliders);
+  visitor = {x: p.x, z: p.z, yaw: Math.atan2(-(faceZ - p.z), -(faceX - p.x)), pitch: 0.12};
+}
+function goToExhibit(ex) {
+  const side = ex.x > 0 ? 1 : -1;
+  stand(ex.x - side * 3.0, ex.z, ex.x, ex.z);
+  openPanel(ex);
+}
+function goToHall(h) {
+  if (h.id === "lobby") stand(building.spawn.x, building.spawn.z, 0, building.spawn.z + 5);
+  else stand(0, h.z0 + 0.5, 0, h.z0 + 6);
+  closePanel();
+}
+function renderResults(q) {
+  q = q.trim().toLowerCase();
+  const list = $("results");
+  let items;
+  if (!q) {
+    items = building.halls.map((h) => ({label: h.id === "lobby" ? "Lobby and timeline" : h.label,
+      sub: h.id === "lobby" ? "" : `${h.exhibits.length} exhibits${h.activity ? " · " + fmt(h.activity) + " contributions" : ""}`,
+      go: () => goToHall(h)}));
+  } else {
+    items = building.exhibits.filter((x) => x.ref.title.toLowerCase().includes(q) || (x.ref.blurb || "").toLowerCase().includes(q))
+      .slice(0, 60).map((x) => ({label: x.ref.title, sub: `${x.ref.group} · ${x.ref.date.slice(0, 4)}`, go: () => goToExhibit(x)}));
+  }
+  list.innerHTML = "";
+  for (const it of items) {
+    const li = document.createElement("li"), b = document.createElement("button");
+    b.type = "button";
+    b.innerHTML = `<span>${esc(it.label)}</span><span class="sub">${esc(it.sub)}</span>`;
+    b.addEventListener("click", () => { closeDirectory(); it.go(); });
+    li.appendChild(b); list.appendChild(li);
+  }
+  if (!items.length) list.innerHTML = `<li class="sub" style="padding:8px 10px">Nothing matches “${esc(q)}”.</li>`;
+}
+function openDirectory() {
+  walker.clear();
+  $("directory").hidden = false;
+  $("search").value = "";
+  renderResults("");
+  $("search").focus();
+}
+function closeDirectory() { $("directory").hidden = true; $("view").focus({preventScroll: true}); }
+$("open-directory").addEventListener("click", openDirectory);
+$("directory").querySelector(".close").addEventListener("click", closeDirectory);
+$("directory").addEventListener("click", (e) => { if (e.target === $("directory")) closeDirectory(); });
+$("search").addEventListener("input", (e) => renderResults(e.target.value));
+$("search").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { const first = $("results").querySelector("button"); if (first) first.click(); }
+});
+
+function renderLegend() {
+  const part = (legend) => `<h3>${esc(legend.label)} (pedestal ${legend === doc.legend.group ? "trim" : "object"})</h3><div class="chips">` +
+    legend.values.slice(0, 14).map((v) => `<span class="chip"><span class="dot" style="background:${v.color}"></span>${esc(v.id)} ${v.count}</span>`).join("") + "</div>";
+  $("legend").innerHTML = part(doc.legend.group) + part(doc.legend.kind) +
+    `<h3>Reading a pedestal</h3><div>Object size: ${esc(doc.legend.size || "size")} (log scale). Gold orbs: ${esc(doc.legend.glow || "highlights")}.
+     Grey: ${esc(doc.legend.dim || "dimmed")}. The green relief on each hall's left wall is that period's weekly activity, oldest at the door.</div>`;
+}
+$("toggle-legend").addEventListener("click", () => {
+  const on = $("legend").hidden;
+  $("legend").hidden = !on;
+  $("toggle-legend").setAttribute("aria-pressed", String(on));
+});
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { if (!$("directory").hidden) closeDirectory(); else closePanel(); return; }
+  if (isTyping(e) || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key.toLowerCase() === "m" && $("directory").hidden) { e.preventDefault(); openDirectory(); }
+  if (e.key.toLowerCase() === "l") $("toggle-legend").click();
+});
+
+/* ---------------------------------------------------------------- labels */
+const labelPool = new Map();
+function labelEl(key, cls, html) {
+  let el = labelPool.get(key);
+  if (!el) {
+    el = document.createElement("div");
+    el.className = "label " + cls;
+    $("labels").appendChild(el);
+    labelPool.set(key, el);
+  }
+  if (el._html !== html) { el.innerHTML = html; el._html = html; }
+  return el;
+}
+function placeLabels() {
+  const items = [], used = new Set();
+  const add = (key, cls, html, x, y, z, rank) => {
+    const q = kit.project(x, y, z);
+    if (!q || q.w > LABEL_RANGE * 3) return;
+    items.push({el: labelEl(key, cls, html), q, rank}); used.add(key);
+  };
+  for (const h of building.halls) {
+    if (h.id === "lobby") continue;
+    // Only the doorways just ahead (and the one just passed): a corridor of signs is noise.
+    if (h.z0 > visitor.z - 3 && h.z0 - visitor.z < 22)
+      add("hall:" + h.id, "hall", `${esc(h.label)}<small>${esc(statLine(withActivity(h)))}</small>`, 0, 4.4, h.z0, 0);
+  }
+  if (hallNow && hallNow.id === "lobby") {
+    for (const t of building.timeline)
+      add("era:" + t.era, "era", `${esc(t.label)}<small>${fmt(t.activity)}</small>`, t.x, t.top + 0.25, t.z, 1);
+  }
+  const near = building.exhibits
+    .map((x) => ({x, d: Math.hypot(x.x - visitor.x, x.z - visitor.z)}))
+    .filter((n) => n.d < LABEL_RANGE).sort((a, b) => a.d - b.d).slice(0, MAX_LABELS);
+  for (const {x} of near) add("ex:" + x.id, "", esc(x.ref.title), x.x, x.top + 0.3, x.z, facingNow && facingNow.id === x.id ? 0 : 2);
+  for (const [key, el] of labelPool) if (!used.has(key)) { el.style.display = "none"; el._skShown = false; }
+  StrataKit.placeLabels(items);
+}
+
+/* ----------------------------------------------------------------- frame */
+function nearestLamps() {
+  return building.lamps.map((l) => ({l, d: Math.hypot(l.x - visitor.x, l.z - visitor.z)}))
+    .sort((a, b) => a.d - b.d).slice(0, MAX_LAMPS)
+    .flatMap(({l}) => [l.x, l.y, l.z, 9, 1.0, 0.82, 0.6, 2.2]);
+}
+const GOLD = MuseumLayout.hex("#f2c14e"), MARK = MuseumLayout.hex("#e0a84f");
+function dynamicRows(t) {
+  const rows = [];
+  for (const x of building.exhibits) {
+    const g = Math.min(x.ref.glow || 0, 12);
+    if (!g || Math.hypot(x.x - visitor.x, x.z - visitor.z) > GLOW_RANGE) continue;
+    for (let i = 0; i < g; i++) {
+      const a = t * 0.6 + (i / g) * Math.PI * 2;
+      rows.push(3, x.x + Math.cos(a) * 0.55, x.top + 0.25 + 0.08 * Math.sin(t * 1.3 + i), x.z + Math.sin(a) * 0.55, 0.11, 0.11, 0.11, ...GOLD);
+    }
+  }
+  if (facingNow) rows.push(2, facingNow.x, 0.015, facingNow.z, 1.5, 0.01, 1.5, ...MARK);
+  return rows;
+}
+
+function frame(t, now, dt) {
+  // The kit's drag-to-orbit moved cam.yaw/pitch: with the eye at the visitor, that is looking around.
+  visitor.yaw = cam.yaw; visitor.pitch = cam.pitch;
+  const paused = !$("directory").hidden;
+  visitor = MuseumWalk.step(visitor, paused ? {} : walker.input(), dt, building.colliders);
+  if (visitor.moving) hintUntil = Math.min(hintUntil, now + 2500);
+  Object.assign(cam, MuseumWalk.lookAt(visitor, EYE_Y));
+
+  const hall = MuseumLayout.hallAt(building.halls, visitor.x, visitor.z);
+  if (hall && hall !== hallNow) { hallNow = hall; showWhere(hall); }
+  const f = MuseumWalk.facing(visitor, building.exhibits);
+  facingNow = f ? f.thing : null;
+
+  sendRows("_mu_set_lights", nearestLamps(), 8);
+  sendRows("_mu_set_dynamic", dynamicRows(t), MuseumLayout.ROW_STRIDE);
+}
+
+function after(t, now) {
+  placeLabels();
+  const prompt = $("prompt");
+  let html = "", cls = "";
+  if (facingNow) {
+    const open = openId === facingNow.id;
+    html = (walker.touchSeen ? (open ? "Tap to close " : "Tap to read about ") : `<kbd>E</kbd>${open ? "Close " : "Read about "}`) + esc(facingNow.ref.title);
+    cls = "target";
+  } else if (now < hintUntil) {
+    html = walker.touchSeen ? "Left thumb walks · drag to look · tap a pedestal"
+      : "<kbd>WASD</kbd>walk · Shift runs · drag to look · <kbd>M</kbd>directory · <kbd>L</kbd>legend";
+    cls = "hint";
+  }
+  const show = !!html && !(walker.touchSeen && openId && matchMedia("(max-width: 640px)").matches);
+  prompt.hidden = !show;
+  if (show && prompt.dataset.html !== html) { prompt.innerHTML = html; prompt.dataset.html = html; }
+  prompt.className = "glass " + cls;
+  document.body.classList.toggle("touch", walker.touchSeen);
+}
+
+// A tap or click on a pedestal's object opens it, from any distance in view.
+function pick(x, y, radius) {
+  let best = null;
+  for (const ex of building.exhibits) {
+    if (Math.hypot(ex.x - visitor.x, ex.z - visitor.z) > LABEL_RANGE * 1.5) continue;
+    const q = kit.project(ex.x, ex.top - 0.3, ex.z);
+    if (!q) continue;
+    const d = Math.hypot(q.x - x, q.y - y), r = Math.max(radius, 260 / q.w);
+    if (d <= r && (!best || q.w < best.w)) best = {ex, w: q.w};
+  }
+  return best && best.ex;
+}
+
+/* ----------------------------------------------------------------- start */
+function startAt() {
+  const at = params.get("at"), hall = params.get("hall");
+  const ex = at && building.exhibits.find((x) => x.id === at || x.ref.title.toLowerCase() === at.toLowerCase());
+  const h = hall && building.halls.find((x) => x.id === hall);
+  if (ex) goToExhibit(ex);
+  else if (h) goToHall(h);
+  else visitor = {x: building.spawn.x, z: building.spawn.z, yaw: building.spawn.yaw, pitch: 0.05};
+  Object.assign(cam, MuseumWalk.lookAt(visitor, EYE_Y));
+}
+
+async function start() {
+  const src = params.get("doc") || "museum.json";
+  try {
+    doc = await (await fetch(src)).json();
+  } catch (e) {
+    $("where").querySelector("h1").textContent = "No museum here yet";
+    $("where").querySelector("p").textContent = `Could not read ${src}. Build one with: python3 -m museum build <config>`;
+    return;
+  }
+  document.title = doc.title;
+  building = MuseumLayout.layout(doc);
+  renderLegend();
+  try {
+    mod = await StrataLoader.load({script: "museum-scene.js", factory: "createMuseumScene", wasm: "museum-scene.wasm",
+      title: doc.title});
+  } catch (e) {
+    return;  // the loader is showing why
+  }
+  const canvas = $("view");
+  try {
+    kit = StrataKit.create({
+      module: mod, canvas, camera: cam, idleOrbit: false, dprCap: 2,
+      limits: {minPitch: -0.9, maxPitch: 0.9, minDist: 0.01, maxDist: 0.1},
+      frame, after, pick, idOf: (ex) => ex.id,
+      targets: () => building.exhibits.slice(0, 20).map((ex) => { const q = kit.project(ex.x, ex.top, ex.z); return q && {id: ex.id, x: q.x, y: q.y}; }).filter(Boolean),
+      onTap: (ex) => { if (ex) { if (openId === ex.id) closePanel(); else openPanel(ex); } },
+      onKey: () => true,  // walking owns the keys; the kit's orbit keys stay off
+      onSlow: () => StrataLoader.slow(),
+      onRestore: () => sendRows("_mu_set_static", building.rows, MuseumLayout.ROW_STRIDE),
+    });
+  } catch (e) {
+    return StrataLoader.fallback(e.code === "no-webgl2" ? "no-webgl2" : "engine",
+      e.code === "no-webgl2" ? "This browser can't draw WebGL 2, which the museum needs." : "The 3D renderer failed to start.");
+  }
+  walker = MuseumWalk.attach({stickEl: $("stick"), knobEl: $("knob"), onInteract: interact, isTyping});
+  // Without a sky in the document, the kit's own afternoon sun stands.
+  if (doc.sky) kit.setSun(doc.sky.unix, doc.sky.lat, doc.sky.lon);
+  mod._mu_set_cull_distance(70);
+  sendRows("_mu_set_static", building.rows, MuseumLayout.ROW_STRIDE);
+  startAt();
+  hintUntil = performance.now() + 9000;
+  showWhere(building.halls[0]);
+  window.__museum = {get visitor() { return visitor; }, building, goToHall, goToExhibit, get facing() { return facingNow && facingNow.id; }};
+  canvas.focus({preventScroll: true});
+  kit.start();
+  if (kit.driven) kit.drive(0);
+  StrataLoader.done();
+}
+start();
+</script>
+</body>
+</html>

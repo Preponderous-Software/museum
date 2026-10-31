@@ -1,0 +1,12 @@
+[
+  {"type": "exhibit", "key": "a", "title": "First Thing", "date": "2019-03-02T10:00:00Z", "group": "home", "kind": "Python",
+   "measures": {"commits": 4}, "facts": [{"label": "Commits", "value": 4}], "links": [{"label": "Site", "url": "https://example.com/a"}]},
+  {"type": "exhibit", "key": "b", "title": "Second Thing", "date": "2021-07-09T10:00:00Z", "group": "work", "kind": "Java",
+   "measures": {"commits": 400, "stars": 3}},
+  {"type": "exhibit", "key": "c", "title": "Archived Thing", "date": "2021-11-01T10:00:00Z", "group": "work", "kind": "Java",
+   "dim": true, "badges": ["archived"], "measures": {"commits": 40}},
+  {"type": "activity", "date": "2019-03-02", "count": 3},
+  {"type": "activity", "date": "2021-07-09", "count": 12},
+  {"type": "activity", "date": "2021-07-10", "count": 5},
+  {"type": "period", "key": "2021", "stats": [{"label": "Contributions", "value": 17}]}
+]

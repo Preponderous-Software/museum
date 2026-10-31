@@ -1,0 +1,9 @@
+# Raw answers from sources: everything, private included. Never commit.
+cache/
+# Built museum documents: the everything-included one names private repos.
+# Build the public one and ship it with the site instead of committing it.
+web/museum*.json
+*.log
+*.pyc
+__pycache__/
+scene/.build/

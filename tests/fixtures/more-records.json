@@ -1,0 +1,6 @@
+[
+  {"type": "exhibit", "key": "b", "title": "ignored: first title wins", "date": "2021-01-01T00:00:00Z",
+   "measures": {"localCommits": 7}, "facts": [{"label": "Local commits", "value": 7}],
+   "links": [{"label": "Mirror", "url": "https://example.org/b"}], "badges": ["mirrored"]},
+  {"type": "exhibit", "key": "only-here", "title": "Only In The Second Source", "date": "2020-05-05T00:00:00Z"}
+]

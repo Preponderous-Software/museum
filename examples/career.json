@@ -1,0 +1,10 @@
+{
+  "title": "A Career in Rooms",
+  "subtitle": "Built from a hand-written list: no accounts needed",
+  "sources": [{"type": "file", "path": "career-records.json", "source": "notes"}],
+  "eras": {"by": "year"},
+  "activity": {"primary": "notes", "label": "events"},
+  "exhibits": {"size": "weeks", "size_label": "weeks spent", "highlight": "people", "highlight_label": "people reached",
+               "group_label": "Place", "kind_label": "Kind", "dim_label": "finished"},
+  "sky": {"unix": 1750532400, "lat": 51.48, "lon": 0.0}
+}
