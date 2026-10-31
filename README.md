@@ -76,6 +76,14 @@ sources show unless it has `"standalone": true`. Built documents
 (`web/museum*.json`) and caches are git-ignored: publish a document by
 shipping it with your site, not by committing it.
 
+## Deploy
+
+`tools/site.sh <document> <dir>` assembles a static site (the page, its
+scripts and wasm, and your document as `museum.json`). Serve that directory
+from anywhere; the scene needs no special headers. To keep a published
+museum current, build it from CI on a schedule with a public config: give the
+github source a `login` and the job's own token is enough.
+
 ## Add a source
 
 Write `museum/sources/<name>.py` with `collect(cfg, ctx)` yielding records,
