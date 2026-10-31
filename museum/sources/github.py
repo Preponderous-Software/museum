@@ -178,7 +178,8 @@ def collect(cfg, ctx):
             "type": "exhibit",
             "key": key,
             "title": r["name"],
-            "date": (first or {}).get("date") or r["createdAt"],
+            # A fork's history starts upstream, years before it was yours: date it by the fork.
+            "date": r["createdAt"] if r.get("isFork") else ((first or {}).get("date") or r["createdAt"]),
             "group": org,
             "kind": (r.get("primaryLanguage") or {}).get("name") or "Other",
             "blurb": r.get("description") or "",

@@ -98,10 +98,13 @@ def scale(exhibits, measure):
 
 
 def month_halls(year, items, split_over):
-    """Splits a crowded year into runs of whole months, each up to split_over exhibits."""
+    """Splits a crowded year into runs of whole months, each up to split_over exhibits.
+    An exhibit from another year (folded in from outside the range) counts as
+    January if it is earlier, December if later."""
     by_month = defaultdict(list)
     for e in items:
-        by_month[int(e["date"][5:7])].append(e)
+        y = int(e["date"][:4])
+        by_month[int(e["date"][5:7]) if y == year else (1 if y < year else 12)].append(e)
     halls, run = [], []
     for m in range(1, 13):
         if run and sum(len(by_month[x]) for x in run) + len(by_month[m]) > split_over:
@@ -125,9 +128,15 @@ def eras_by_year(exhibits, activity, periods, cfg):
     first = int(cfg.get("from_year") or min(years))
     last = int(cfg.get("to_year") or max(years))
     split_over = int(cfg.get("split_over", 60))
+    # Nothing is lost to the range: earlier exhibits join the first era, later ones the last.
+    def era_year(e):
+        return min(max(int(e["date"][:4]), first), last)
+    outside = sum(1 for e in exhibits if era_year(e) != int(e["date"][:4]))
+    if outside:
+        print(f"museum: {outside} exhibit(s) dated outside {first}-{last} placed in the nearest era", file=sys.stderr)
     eras = []
     for y in range(first, last + 1):
-        items = sorted((e for e in exhibits if e["date"].startswith(str(y))), key=lambda e: e["date"])
+        items = sorted((e for e in exhibits if era_year(e) == y), key=lambda e: e["date"])
         if len(items) > split_over:
             halls = month_halls(y, items, split_over)
         else:

@@ -72,6 +72,20 @@ class ErasTest(unittest.TestCase):
         self.assertEqual([len(h["exhibits"]) for h in build.month_halls(2026, items, 4)], [10])
 
 
+class RangeTest(unittest.TestCase):
+    def test_exhibits_dated_outside_the_eras_join_the_nearest_one_instead_of_vanishing(self):
+        items = [{"id": "old", "date": "2005-04-16"}, {"id": "in", "date": "2017-02-01"}, {"id": "new", "date": "2031-01-01"}]
+        eras = build.eras_by_year(items, {}, {}, {"from_year": 2016, "to_year": 2018})
+        placed = {i: e["id"] for e in eras for h in e["halls"] for i in h["exhibits"]}
+        self.assertEqual(placed, {"old": "2016", "in": "2017", "new": "2018"})
+
+    def test_a_split_year_keeps_folded_in_exhibits(self):
+        items = [{"id": "old", "date": "2001-06-01"}] + [{"id": f"x{i}", "date": "2016-08-01"} for i in range(3)]
+        eras = build.eras_by_year(items, {}, {}, {"from_year": 2016, "to_year": 2016, "split_over": 2})
+        self.assertEqual(sum(len(h["exhibits"]) for h in eras[0]["halls"]), 4)
+        self.assertEqual(eras[0]["halls"][0]["exhibits"], ["old"])
+
+
 class ScaleTest(unittest.TestCase):
     def test_size_is_log_scaled_to_the_largest_and_missing_is_zero(self):
         items = [{"measures": {"c": 0}}, {"measures": {"c": 9}}, {"measures": {"c": 99}}, {"measures": {}}]

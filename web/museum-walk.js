@@ -120,7 +120,10 @@
   function attach(ctx) {
     const keys = new Set();
     let stickIn = {forward: 0, right: 0, run: false}, stickPointer = null;
-    const api = {touchSeen: false};
+    // A phone starts in touch mode (joystick, touch hints), before its first tap.
+    const coarse = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
+    const api = {touchSeen: coarse};
+    if (coarse) ctx.stickEl.hidden = false;
     const MOVE = new Set(["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "shift"]);
 
     // Capture phase on window, so these keys never reach the kit's orbit keys.
