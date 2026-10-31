@@ -3,7 +3,13 @@ each, each repo's first commit, and your daily contribution calendar.
 
 Config:
     {"type": "github", "owners": ["alice", "alice-org"], "from_year": 2016,
-     "cache": "cache/github.json", "include_forks": true, "include_private": false}
+     "cache": "cache/github.json", "include_forks": true, "include_private": false,
+     "login": "alice"}
+
+`login` names whose commits and contribution calendar to read. Without it,
+the signed-in account (`gh`'s viewer) is used, which sees its own private
+contributions; with it, any token works (a CI's GITHUB_TOKEN included) and
+the calendar is the one the profile shows the public.
 
 Private repositories are left out unless `include_private` is true, and each
 one left out is announced as a `withhold` record, so no other source (a local
@@ -107,12 +113,12 @@ def _apply_first_commit(r, head):
                             "author": (n.get("author") or {}).get("name")}
 
 
-def _calendar(year):
-    d = _gql(f'''{{ viewer {{ contributionsCollection(from: "{year}-01-01T00:00:00Z", to: "{year}-12-31T23:59:59Z") {{
+def _calendar(who, year):
+    d = _gql(f'''{{ {who} {{ contributionsCollection(from: "{year}-01-01T00:00:00Z", to: "{year}-12-31T23:59:59Z") {{
       totalCommitContributions totalPullRequestContributions totalIssueContributions
       totalPullRequestReviewContributions
       contributionCalendar {{ totalContributions weeks {{ contributionDays {{ date contributionCount }} }} }} }} }} }}''')
-    c = d["viewer"]["contributionsCollection"]
+    c = next(iter(d.values()))["contributionsCollection"]
     return {"year": year, "total": c["contributionCalendar"]["totalContributions"],
             "commits": c["totalCommitContributions"], "prs": c["totalPullRequestContributions"],
             "issues": c["totalIssueContributions"], "reviews": c["totalPullRequestReviewContributions"],
@@ -120,8 +126,10 @@ def _calendar(year):
                      for x in w["contributionDays"] if x["date"].startswith(str(year))]}
 
 
-def fetch(owners, from_year):
-    viewer = _gql("{ viewer { id login } }")["viewer"]
+def fetch(owners, from_year, login=None):
+    # Whose history: a named user, or whoever `gh` is signed in as.
+    who = f'user(login: "{login}")' if login else "viewer"
+    viewer = next(iter(_gql(f"{{ {who} {{ id login }} }}").values()))
     repos = []
     for o in owners:
         repos += json.loads(_gh(["repo", "list", o, "--limit", "1000", "--json", REPO_FIELDS]))
@@ -134,7 +142,7 @@ def fetch(owners, from_year):
              # The author filter is what times out on huge histories: keep the repo without it.
              fallback=lambda r: _batched([r], lambda _: totals_only, _apply_totals))
     _batched([r for r in repos if r.get("_oid") and r.get("commits")], _first_commit_body, _apply_first_commit)
-    years = [_calendar(y) for y in range(from_year, datetime.date.today().year + 1)]
+    years = [_calendar(who, y) for y in range(from_year, datetime.date.today().year + 1)]
     return {"login": viewer["login"], "repos": repos, "years": years}
 
 
@@ -143,7 +151,7 @@ def collect(cfg, ctx):
     if os.path.exists(cache):
         raw = json.load(open(cache))
     else:
-        raw = fetch(cfg["owners"], int(cfg.get("from_year", 2008)))
+        raw = fetch(cfg["owners"], int(cfg.get("from_year", 2008)), cfg.get("login"))
         os.makedirs(os.path.dirname(cache), exist_ok=True)
         json.dump(raw, open(cache, "w"))
     forks = cfg.get("include_forks", True)
