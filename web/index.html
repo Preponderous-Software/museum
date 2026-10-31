@@ -82,7 +82,7 @@
   #knob { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%;
     background: rgba(244, 239, 230, .7); pointer-events: none; }
   body.touch #prompt { left: auto; right: max(16px, env(safe-area-inset-right)); transform: none; bottom: max(64px, env(safe-area-inset-bottom));
-    max-width: calc(100vw - 190px); }
+    max-width: calc(100vw - 190px); white-space: normal; }
   body.touch #legend { bottom: 180px; }
 
   /* Phones: the panel is a bottom sheet over the joystick, the tools shrink to icons' width. */
@@ -91,6 +91,9 @@
       padding-bottom: max(16px, env(safe-area-inset-bottom)); }
     #where { max-width: calc(100vw - 32px); top: max(64px, calc(env(safe-area-inset-top) + 56px)); }
     #where h1 { font-size: 17px; }
+    /* A doorway sign keeps its name; the hall's numbers are in the box at the top. */
+    .label.hall { font-size: 18px; }
+    .label.hall small { display: none; }
   }
   [hidden] { display: none !important; }
 </style>
